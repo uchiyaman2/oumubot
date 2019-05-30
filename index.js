@@ -45,7 +45,7 @@ getJWT((jwttoken) => {
 
 //1. JWTを取得
 function getJWT(callback){
-const iss = SERVER_ID;
+const iss = SERVERID;
 const iat = Math.floor(Date.now() / 1000);
 const exp = iat + (60 * 60);　//JWTの有効期間は1時間
 const cert = PRIVATEKEY;
