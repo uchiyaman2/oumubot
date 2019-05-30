@@ -3,6 +3,23 @@
 // モジュールインポート
 const express = require("express");
 const server = express();
+//20190530追加
+const bodyParser = require("body-parser");
+const jwt = require('jsonwebtoken');
+const https = require("https");
+const request = require("request");
+const qs = require("querystring");
+
+//20190530追加
+// LINE WORKS用変数定義
+const APIID = process.env.APIID;
+const SERVERID = process.env.SERVERID;
+const CONSUMERKEY = process.env.CONSUMERKEY;
+const PRIVATEKEY = process.env.PRIVATEKEY;
+const BOTNO = process.env.BOTNO;
+
+//POSTのパラメータをJSONで取得
+server.use(bodyParser.json());
 
 // Webアプリケーション起動
 server.listen(process.env.PORT || 3000);
@@ -15,4 +32,82 @@ server.get('/', (req, res) => {
 // Botからメッセージに応答
 server.post('/callback', (req, res) => {
     res.sendStatus(200);
+    const message = req.body.content.text;
+    const roomId = req.body.source.roomId;
+    const accountId = req.body.source.accountId;
+
 });
+getJWT((jwttoken) => {
+    getServerToken(jwttoken, (newtoken) => {
+        //取得したnewtokenを使ってメッセージ送信
+    });
+});
+
+//1. JWTを取得
+function getJWT(callback){
+const iss = SERVER_ID;
+const iat = Math.floor(Date.now() / 1000);
+const exp = iat + (60 * 60);　//JWTの有効期間は1時間
+const cert = PRIVATEKEY;
+const token = [];
+const jwttoken = jwt.sign({"iss":iss, "iat":iat, "exp":exp}, cert, {algorithm:"RS256"}, (err, jwttoken) => {
+    if (!err) {
+        callback(jwttoken);
+    } else {
+        console.log(err);
+    }
+});
+}
+//2.JWTを使ってServer Tokenを取得
+function getServerToken(jwttoken, callback) {
+const postdata = {
+    url: 'https://authapi.worksmobile.com/b/' + API_ID + '/server/token',
+    headers : {
+        'Content-Type' : 'application/x-www-form-urlencoded; charset=UTF-8',
+    },
+    form: {
+        "grant_type" : encodeURIComponent("urn:ietf:params:oauth:grant-type:jwt-bearer"),
+        "assertion" : jwttoken
+    }
+};
+request.post(postdata, (error, response, body) => {
+    if (error) {
+        console.log(error);
+        callback(error);
+    } else {
+        const jsonobj = JSON.parse(body);
+        const AccessToken = jsonobj.access_token;
+        callback(AccessToken);
+    }
+});
+}
+
+getJWT((jwttoken) => {
+    getServerToken(jwttoken, (newtoken) => {
+        sendMessage(newtoken, accountId, message);
+    });
+});
+function sendMessage(token, accountId, message) {
+const postdata = {
+    url: 'https://apis.worksmobile.com/' + API_ID + '/message/sendMessage/v2',
+    headers : {
+      'Content-Type' : 'application/json;charset=UTF-8',
+      'consumerKey' : CONSUMERKEY,
+      'Authorization' : "Bearer " + token
+    },
+    json: {
+        "botNo" : Number(BOTNO),
+        "accountId" : accountId,
+        "content" : {
+            "type" : "text",
+            "text" : message
+        }
+    }
+};
+request.post(postdata, (error, response, body) => {
+    if (error) {
+      console.log(error);
+    }
+    console.log(body);
+});
+}
