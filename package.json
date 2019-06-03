@@ -19,5 +19,15 @@
     "querystring": "^0.2.0",
     "request": "^2.88.0"
   },
-  "repository": "CUIuchida"
+  "repository": "CUIuchida",
+  "type": "message",
+  "source": {
+    "accountId": "rhcp.0402@gmail.com",
+    "roomId": "12345"
+  },
+  "createdTime": 1470902041851,
+  "content": {
+    "type": "text",
+    "text": "hello"
+  }
 }
